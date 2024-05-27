@@ -12,64 +12,48 @@ import java.util.Map;
 public class Main {
     public static void main(String[] args) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter("hashes.txt"));
+        byte[] message = "Hello World".getBytes(StandardCharsets.UTF_8);
         try {
-            testMessageDigest(writer);
-            testSecureRandom(writer);
+            System.out.println("..........testing Message Digest.........");
+            getMessageDigestHash(message, "SHA-256", writer);
+            getMessageDigestHash(message, "SHA-384", writer);
+            getMessageDigestHash(message, "SHA-512", writer);
+            System.out.println();
+            System.out.println(".........testing Secure Random............");
+            getSecureRandomHash(message, "SHA1PRNG", writer);
+            getSecureRandomHash(message, "DRBG", writer);
+            getSecureRandomHash(message, "Windows-PRNG", writer);
+            System.out.println();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException();
         }
-        testEqualsAndHashCode(writer);
+        System.out.println(".........testing correct equals and hashCode.........");
+        testCorrectEqualsAndHashCode(writer);
+        System.out.println();
+        System.out.println(".........testing incorrect equals and hashCode.........");
+        testIncorrectEqualsAndHashCode(writer);
         writer.close();
     }
 
-    public static void testSecureRandom(BufferedWriter writer) throws NoSuchAlgorithmException, IOException {
-        byte[] message = "Hello World".getBytes(StandardCharsets.UTF_8);
 
-        long hash1 = getSecureRandomHash(message, "SHA1PRNG");
-        System.out.println(hash1);
-        writer.write(String.valueOf(hash1));
-        writer.newLine();
-
-        long hash2 = getSecureRandomHash(message, "DRBG");
-        System.out.println(hash2);
-        writer.write(String.valueOf(hash2));
-        writer.newLine();
-
-        long hash3 = getSecureRandomHash(message, "Windows-PRNG");
-        System.out.println(hash3);
-        writer.write(String.valueOf(hash3));
-        writer.newLine();
-    }
-
-    public static long getSecureRandomHash(byte[] message, String algorithm) throws NoSuchAlgorithmException {
+    public static void getSecureRandomHash(byte[] message, String algorithm, BufferedWriter writer) throws NoSuchAlgorithmException, IOException {
         SecureRandom secureRandom = SecureRandom.getInstance(algorithm);
+        secureRandom.setSeed(1308);
         secureRandom.nextBytes(message);
-        return secureRandom.nextLong();
-    }
-
-    public static void testMessageDigest(BufferedWriter writer) throws NoSuchAlgorithmException, IOException {
-        byte[] message = "Hello World".getBytes(StandardCharsets.UTF_8);
-
-        String hash1 = getMessageDigestHash(message, "SHA-256");
-        System.out.println(hash1);
-        writer.write(hash1);
-        writer.newLine();
-
-        String hash2 = getMessageDigestHash(message, "SHA-384");
-        System.out.println(hash2);
-        writer.write(hash2);
-        writer.newLine();
-
-        String hash3 = getMessageDigestHash(message, "SHA-512");
-        System.out.println(hash3);
-        writer.write(hash3);
+        long hash = secureRandom.nextLong();
+        System.out.println(hash);
+        writer.write(String.valueOf(hash));
         writer.newLine();
     }
 
-    private static String getMessageDigestHash(byte[] message, String algorithm) throws NoSuchAlgorithmException {
+
+    private static void getMessageDigestHash(byte[] message, String algorithm, BufferedWriter writer) throws NoSuchAlgorithmException, IOException {
         MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
         messageDigest.update(message);
-        return convertToHex(messageDigest.digest());
+        String hash = convertToHex(messageDigest.digest());
+        System.out.println(hash);
+        writer.write(hash);
+        writer.newLine();
     }
 
     private static String convertToHex(byte[] data) {
@@ -84,7 +68,7 @@ public class Main {
         return hexString.toString();
     }
 
-    private static void testEqualsAndHashCode(BufferedWriter writer) throws IOException {
+    private static void testCorrectEqualsAndHashCode(BufferedWriter writer) throws IOException {
         Book book1 = new Book("1984", "George Orwell", 214);
         Book book2 = new Book("The Little Prince", "Antoine de Saint-Exupery", 156);
         Book book3 = new Book("1984", "George Orwell", 214);
@@ -111,10 +95,12 @@ public class Main {
         for(Map.Entry<Book, Integer> entry : map.entrySet()) {
             System.out.println(entry.getKey() + ", " + entry.getValue());
         }
+    }
 
-        Movie movie1 = new Movie("Я, побєда і Берлін", "Comedy", Duration.ofMinutes(120));
+    private static void testIncorrectEqualsAndHashCode(BufferedWriter writer) throws IOException {
+        Movie movie1 = new Movie("Reincarnation", "Horror", Duration.ofMinutes(120));
         Movie movie2 = new Movie("Avatar", "Science fiction", Duration.ofMinutes(200));
-        Movie movie3 = new Movie("Я, побєда і Берлін", "Comedy", Duration.ofMinutes(120));
+        Movie movie3 = new Movie("Reincarnation", "Horror", Duration.ofMinutes(120));
 
         System.out.println("movie1 hashCode: " + movie1.hashCode());
         writer.write(Integer.toString(movie1.hashCode()));
